@@ -50,21 +50,36 @@ fun main(args: Array<String>) {
         .longOpt("toolDiameter")
         .hasArg()
         .argName("diameter of tool")
-        .required()
         .build()
 
     val toolHorizontalSpeedOption = Option.builder("ths")
         .longOpt("toolHorizontalSpeed")
         .hasArg()
         .argName("tool horizontal speed")
-        .required()
         .build()
 
     val toolVerticalSpeedOption = Option.builder("tvs")
         .longOpt("toolverticalSpeed")
         .hasArg()
         .argName("tool vertical speed")
-        .required()
+        .build()
+
+    val inputFile = Option.builder("i")
+        .longOpt("input")
+        .hasArg()
+        .argName("input file")
+        .build()
+
+    val shiftX = Option.builder("sx")
+        .longOpt("shiftX")
+        .hasArg()
+        .argName("shift X axis from input file")
+        .build()
+
+    val shiftY = Option.builder("sy")
+        .longOpt("shiftY")
+        .hasArg()
+        .argName("shift Y axis from input file")
         .build()
 
 
@@ -77,6 +92,10 @@ fun main(args: Array<String>) {
     options.addOption(toolHorizontalSpeedOption)
 
     options.addOption(outputFile)
+    options.addOption(inputFile)
+
+    options.addOption(shiftX)
+    options.addOption(shiftY)
 
     // define parser
     val cmd: CommandLine
@@ -120,6 +139,23 @@ fun main(args: Array<String>) {
                 deepStep = cmd.getOptionValue(deepStepOption).toDoubleOrNull()
                     ?: throw ParseException("Can not parse deep speed")
             ).getGCode()
+        }
+
+        if (cmd.hasOption(shiftX) || cmd.hasOption(shiftY)) {
+            if (cmd.hasOption(inputFile)) {
+                val file = File(cmd.getOptionValue(inputFile))
+                if (file.isDirectory || (!file.canRead())) {
+                    throw ParseException("Input file is not file or cant read.")
+                } else {
+                    gcode = Shift(
+                        file = file,
+                        xShift = if (cmd.hasOption(shiftX)) cmd.getOptionValue(shiftX).toDoubleOrNull() else null ,
+                        yShift = if (cmd.hasOption(shiftY)) cmd.getOptionValue(shiftY).toDoubleOrNull() else null ,
+                    ).getGCode()
+                }
+            } else {
+                throw ParseException("For shift must insert input file.")
+            }
         }
 
         if (cmd.hasOption(outputFile)) {
